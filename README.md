@@ -49,7 +49,12 @@ Model-agnostic: Ollama, Hive, DeepSeek, GLM, or any OpenAI-compatible endpoint.
 
 ---
 
-## Quickstart (SDK)
+## Quickstart
+
+**New here? Start with [GETTING_STARTED.md](GETTING_STARTED.md)** — installing
+Postgres, choosing a model (Ollama or a cloud API), and your first goal.
+
+### SDK
 
 ```python
 from arjun import Arjun
