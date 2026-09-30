@@ -132,3 +132,43 @@ def test_sdk_context_anatomy():
     from arjun.sdk.verifiers import DeterministicVerifier
 
     assert DeterministicVerifier(lambda g, t, s, a: (True, "ok")).verify({}, {}, [], [])["pass"]
+
+
+def test_vak_roundtrip(tmp_path):
+    from arjun.vak import Vault
+
+    v = Vault(name="test-vault")
+    v.set_identity({"agent": "Æmma Hø", "owner": "Quantum Thoughter"})
+    v.add_engram("memory is pure text", importance=0.9, tags=["law"])
+    p = tmp_path / "mind.vak"
+    v.write(p)
+
+    v2 = Vault.read(p)
+    assert v2.name == "test-vault"
+    assert len(v2.engrams) == 1
+    assert v2.engrams[0].content == "memory is pure text"
+    assert v2.seal is not None
+
+
+def test_vak_tamper_detection(tmp_path):
+    import pytest
+    from arjun.vak import Vault
+
+    v = Vault()
+    v.add_engram("original truth", importance=0.8)
+    p = tmp_path / "mind.vak"
+    v.write(p)
+    raw = p.read_text()
+    with pytest.raises(ValueError):
+        Vault.from_text(raw.replace("original truth", "altered lie"))
+
+
+def test_vak_is_universal_text(tmp_path):
+    from arjun.vak import Vault, SIGNATURE
+
+    v = Vault()
+    v.add_engram("readable by any system", tags=["a", "b"])
+    text = v.to_text()
+    assert text.startswith(SIGNATURE)
+    assert "readable by any system" in text          # plain UTF-8, greppable
+    assert "model_agnostic=1" in text

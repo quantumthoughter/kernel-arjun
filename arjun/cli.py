@@ -367,6 +367,94 @@ def cmd_watch(args) -> int:
         return 0
 
 
+def cmd_vault(args) -> int:
+    """Seal, open, verify, or attach a portable VĀK memory vault."""
+    from .vak import Vault, find_vault
+
+    action = args.action
+    if action == "seal":
+        cfg = load_config(args.config)
+        db = DB(cfg.dsn)
+        v = Vault(name=args.name or "æmma-vault")
+        if args.identity:
+            v.set_identity(json.loads(Path(args.identity).read_text()))
+        if args.goal:
+            goal = db.get_goal(args.goal)
+            if goal:
+                v.add_layer("goal", json.dumps({k: str(goal[k]) for k in ("id", "title", "dod", "status")},
+                                               indent=2, ensure_ascii=False), kind="ledger")
+                for a in db.list_artifacts(args.goal, 200):
+                    p = Path(a["path"])
+                    if p.exists() and p.suffix == ".md":
+                        v.add_engram(f"[artifact] {p.name}: {p.read_text()[:400]}",
+                                     importance=0.5, tags=["artifact"])
+        mem_path = Path(cfg.memory_path).expanduser()
+        if mem_path.exists() and not args.no_memory:
+            try:
+                data = json.loads(mem_path.read_text())
+                for e in data:
+                    v.add_engram(e["content"], importance=e.get("importance", 0.5),
+                                 tags=e.get("tags", []), strength=e.get("strength", 1.0))
+            except Exception as ex:
+                console.print(f"[yellow]could not read memory: {ex}[/yellow]")
+        out = args.out or "mind.vak"
+        v.write(out)
+        console.print(f"[green]sealed[/green] {out} — {len(v.layers)} layers, {len(v.engrams)} engrams, {Path(out).stat().st_size} bytes")
+        console.print(f"  seal: {v.seal[:32]}…")
+        return 0
+
+    if action in ("open", "verify"):
+        path = args.path or find_vault()
+        if not path:
+            console.print("[red]no vault found (pass a path)[/red]")
+            return 1
+        try:
+            v = Vault.read(path)
+        except ValueError as e:
+            console.print(f"[red]seal FAILED:[/red] {e}")
+            return 1
+        console.print(f"[green]VĀK vault OK[/green] {path}")
+        console.print(f"  name: {v.name}")
+        console.print(f"  layers: {len(v.layers)}  engrams: {len(v.engrams)}")
+        console.print(f"  seal: {v.seal[:32]}…")
+        if action == "open":
+            for layer in v.layers[:5]:
+                console.print(f"  [{layer.kind}] {layer.name}: {layer.payload[:60]}")
+        return 0
+
+    if action == "attach":
+        path = args.path or find_vault()
+        if not path:
+            console.print("[red]no vault found[/red]")
+            return 1
+        v = Vault.read(path)
+        cfg = load_config(args.config)
+        # re-embodiment is done by a LOCAL embedder (Ollama), independent of the
+        # chat backend in use. The body is regenerated; the text is the truth.
+        from .models import OllamaClient, ModelError
+
+        embed_url = args.embed_url or cfg.ollama_url
+        embed_model = args.embed_model or cfg.embed_model
+        client = OllamaClient(embed_url, timeout=120)
+        memory = EngramMemory(
+            cfg.memory_path, lambda t: client.embed(embed_model, t),
+            enabled=True, top_k=cfg.memory_top_k,
+        )
+        try:
+            client.embed(embed_model, "ping")
+        except ModelError as e:
+            console.print(f"[red]embedder unavailable ({embed_model} @ {embed_url}):[/red] {e}")
+            console.print("  start ollama and pull the embed model, or pass --embed-url/--embed-model")
+            return 1
+        n = v.attach_engrams_to(memory)
+        console.print(f"[green]attached[/green] {n} engrams from {path} into {cfg.memory_path}")
+        console.print(f"  re-embodied with {embed_model} via {embed_url}")
+        return 0
+
+    console.print("usage: arjun vault {seal|open|verify|attach}")
+    return 1
+
+
 def cmd_meter(args) -> int:
     """Long-horizon scorecard: production, coherence, fidelity, reasoning depth."""
     cfg = load_config(args.config)
@@ -539,6 +627,18 @@ def main(argv=None) -> int:
     p = sub.add_parser("meter", help="long-horizon scorecard for a goal")
     p.add_argument("goal_id", type=int)
     p.set_defaults(fn=cmd_meter)
+
+    p = sub.add_parser("vault", help="portable VĀK memory vault (seal/open/verify/attach)")
+    p.add_argument("action", choices=["seal", "open", "verify", "attach"])
+    p.add_argument("path", nargs="?", help="vault file (or auto-find a mounted drive)")
+    p.add_argument("--out", help="output path for seal")
+    p.add_argument("--name", help="vault name")
+    p.add_argument("--goal", type=int, help="include a goal's ledger + artifacts")
+    p.add_argument("--identity", help="path to a JSON identity file")
+    p.add_argument("--no-memory", action="store_true", help="skip local engram memory")
+    p.add_argument("--embed-url", help="embedder URL for attach (default: ollama)")
+    p.add_argument("--embed-model", help="embed model for attach (default: nomic-embed-text)")
+    p.set_defaults(fn=cmd_vault)
 
     p = sub.add_parser("context", help="show the assembled context for the next step")
     p.add_argument("goal_id", type=int)
