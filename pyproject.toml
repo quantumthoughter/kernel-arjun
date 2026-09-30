@@ -33,7 +33,7 @@ dev = ["pytest>=8", "build", "twine"]
 
 [project.urls]
 Homepage = "https://murugan.ai"
-Source = "https://github.com/murugan-ai/kernel-arjun"
+Source = "https://github.com/quantumthoughter/kernel-arjun"
 
 [project.scripts]
 arjun = "arjun.cli:main"

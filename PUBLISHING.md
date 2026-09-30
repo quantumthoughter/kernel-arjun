@@ -77,7 +77,7 @@ pip install 'kernel-arjun[all]'    # + MCP + dashboard extras
 ## 5. Install from GitHub (no PyPI needed)
 
 ```bash
-pip install git+https://github.com/murugan-ai/kernel-arjun.git
+pip install git+https://github.com/quantumthoughter/kernel-arjun.git
 ```
 
 ---
