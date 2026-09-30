@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+
+# Secrets — never commit
+.env
+*.key
+config.yaml
+opencode.json
+
+# Mission outputs (large; keep the mission kit, not the runs)
+missions/*/run*/
+missions/*/*.pdf
+missions/*/*.html
+missions/*/book_edited/
+
+# Local data
+data/
+*.sqlite
+*.db
+
+# macOS
+.DS_Store
+**/.DS_Store

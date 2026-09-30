@@ -1,0 +1,43 @@
+postgres:
+  dsn: "host=127.0.0.1 port=5432 dbname=arjun user=quan_yin"
+
+ollama:
+  base_url: "http://127.0.0.1:11434"
+  embed_model: "nomic-embed-text"
+
+models:
+  planner: "qwen2.5-coder:7b"
+  executor: "qwen2.5-coder:7b"
+  verifier: "codegeex4:latest"
+  compressor: "llama3.2:3b"
+
+limits:
+  max_steps: 200
+  max_minutes: 1440
+  max_tokens: 2000000
+  step_timeout_sec: 300
+  model_timeout_sec: 900
+
+memory:
+  enabled: true
+  path: "~/.kernel-arjun/engrams.json"
+  top_k: 5
+
+notify:
+  enabled: true
+
+safety:
+  allow_read_paths:
+    - "/tmp"
+  deny_patterns:
+    - "rm -rf /"
+    - "sudo "
+    - "shutdown"
+    - "reboot"
+    - "mkfs"
+    - "diskutil erase"
+    - "dd if="
+    - "> /dev/"
+    - "chmod -R 777 /"
+    - ":(){:|:&};:"
+    - "kill -9 1"
