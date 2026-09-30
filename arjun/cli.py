@@ -367,6 +367,20 @@ def cmd_watch(args) -> int:
         return 0
 
 
+def cmd_compress(args) -> int:
+    """Measure real memory-compression techniques on a corpus."""
+    from .compress import print_report as pr_report, report as c_report
+    from .predcompress import print_report as pp_report, report as p_report
+
+    target = args.path
+    console.print("[bold]── compression lab ──[/bold]")
+    pr_report(c_report(target))
+    if args.predictive:
+        console.print()
+        pp_report(p_report(target))
+    return 0
+
+
 def cmd_vault(args) -> int:
     """Seal, open, verify, or attach a portable VĀK memory vault."""
     from .vak import Vault, find_vault
@@ -627,6 +641,11 @@ def main(argv=None) -> int:
     p = sub.add_parser("meter", help="long-horizon scorecard for a goal")
     p.add_argument("goal_id", type=int)
     p.set_defaults(fn=cmd_meter)
+
+    p = sub.add_parser("compress", help="measure compression techniques on a corpus")
+    p.add_argument("path", help="file or directory to analyse")
+    p.add_argument("--predictive", action="store_true", help="also run predictive (model-as-compressor) test")
+    p.set_defaults(fn=cmd_compress)
 
     p = sub.add_parser("vault", help="portable VĀK memory vault (seal/open/verify/attach)")
     p.add_argument("action", choices=["seal", "open", "verify", "attach"])

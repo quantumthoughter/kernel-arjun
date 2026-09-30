@@ -163,6 +163,29 @@ def test_vak_tamper_detection(tmp_path):
         Vault.from_text(raw.replace("original truth", "altered lie"))
 
 
+def test_compression_floor():
+    from arjun.compress import compression_floor, general_compressors
+
+    data = (b"the stable ledger remembers. " * 200)
+    floor = compression_floor(data)
+    assert floor["theoretical_max_ratio"] > 1.0
+    comps = general_compressors(data)
+    assert comps["lzma-9"]["ratio"] > 5.0          # repetitive text compresses hard
+    assert comps["zlib-9"]["compressed_bytes"] < len(data)
+
+
+def test_predictive_predictable_vs_random():
+    from arjun.predcompress import predictive_compress
+    import os
+
+    repetitive = b"abcabcabc" * 500
+    r1 = predictive_compress(repetitive, max_order=3)
+    assert r1["ratio_vs_test"] > 3.0               # predictable -> cheap
+    random = os.urandom(3000)
+    r2 = predictive_compress(random, max_order=3)
+    assert r2["ratio_vs_test"] < 1.5               # random -> incompressible
+
+
 def test_vak_is_universal_text(tmp_path):
     from arjun.vak import Vault, SIGNATURE
 
