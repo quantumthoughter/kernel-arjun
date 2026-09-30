@@ -1,0 +1,69 @@
+{
+  "kernel": {
+    "words": 20230,
+    "chapters_present": 10,
+    "chapters_meeting_min": 10,
+    "completion_pct": 100.0,
+    "terms_present": 6,
+    "terms_total": 6,
+    "pass": true,
+    "chapter_lengths": [
+      2318,
+      2446,
+      1658,
+      2468,
+      1752,
+      2227,
+      1757,
+      1931,
+      1814,
+      1859
+    ]
+  },
+  "naive": {
+    "words": 14472,
+    "chapters_present": 10,
+    "chapters_meeting_min": 1,
+    "completion_pct": 10.0,
+    "terms_present": 6,
+    "terms_total": 6,
+    "pass": false,
+    "chapter_lengths": [
+      1746,
+      1494,
+      1482,
+      1445,
+      1436,
+      1382,
+      1333,
+      1387,
+      1363,
+      1404
+    ],
+    "model_calls": 2,
+    "tokens": 38651
+  },
+  "naive_forced": {
+    "words": 16181,
+    "chapters_present": 10,
+    "chapters_meeting_min": 7,
+    "completion_pct": 70.0,
+    "terms_present": 6,
+    "terms_total": 6,
+    "pass": false,
+    "chapter_lengths": [
+      1568,
+      1927,
+      1674,
+      1476,
+      1751,
+      1787,
+      1274,
+      1313,
+      1796,
+      1615
+    ],
+    "model_calls": 10,
+    "tokens": 126329
+  }
+}

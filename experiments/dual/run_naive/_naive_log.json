@@ -1,0 +1,42 @@
+{
+  "calls": [
+    {
+      "i": 0,
+      "out_tokens": 20820,
+      "files": [
+        "book/01_the_window_and_the_world.md",
+        "book/02_what_the_window_cannot_hold.md",
+        "book/03_the_durable_ledger.md",
+        "book/04_context_assembly.md",
+        "book/05_budgets_are_law.md",
+        "book/06_the_verifier_is_never_the_doer.md",
+        "book/07_checkpoint.md",
+        "book/08_resume.md",
+        "book/09_the_long_night.md",
+        "book/10_the_long_horizon.md"
+      ],
+      "secs": 136.8
+    },
+    {
+      "i": 1,
+      "out_tokens": 233,
+      "files": [],
+      "secs": 5.3
+    }
+  ],
+  "files": [
+    "book/01_the_window_and_the_world.md",
+    "book/02_what_the_window_cannot_hold.md",
+    "book/03_the_durable_ledger.md",
+    "book/04_context_assembly.md",
+    "book/05_budgets_are_law.md",
+    "book/06_the_verifier_is_never_the_doer.md",
+    "book/07_checkpoint.md",
+    "book/08_resume.md",
+    "book/09_the_long_night.md",
+    "book/10_the_long_horizon.md"
+  ],
+  "tokens_in": 17598,
+  "tokens_out": 21053,
+  "stopped": "model said DONE at call 1"
+}

@@ -18,30 +18,31 @@ CHAPTERS = 10
 
 
 def score(dir_: Path) -> dict:
+    """Method-agnostic judge: glob every chapter file in book/, whatever its name.
+
+    A chapter counts if it is a .md file with >= MIN_WORDS words. The book passes
+    when at least CHAPTERS chapters qualify and all canon terms appear.
+    """
     book = dir_ / "book"
     chapters = {}
-    total_words = 0
     text_all = []
-    for i in range(1, CHAPTERS + 1):
-        f = book / f"{i:02d}_chapter.md"
-        if f.exists():
-            wc = len(f.read_text().split())
-            chapters[f.name] = wc
-            total_words += wc
-            text_all.append(f.read_text())
-        else:
-            chapters[f.name] = 0
+    for f in sorted(book.glob("*.md")):
+        wc = len(f.read_text().split())
+        chapters[f.name] = wc
+        text_all.append(f.read_text())
+    total_words = sum(chapters.values())
     joined = "\n".join(text_all).lower()
     terms_present = [t for t in TERMS if t.lower() in joined]
     passing = sum(1 for w in chapters.values() if w >= MIN_WORDS)
     return {
         "words": total_words,
-        "chapters_present": sum(1 for w in chapters.values() if w > 0),
+        "chapters_present": len(chapters),
         "chapters_meeting_min": passing,
         "completion_pct": round(100 * passing / CHAPTERS, 1),
         "terms_present": len(terms_present),
         "terms_total": len(TERMS),
-        "pass": passing == CHAPTERS and len(terms_present) == len(TERMS),
+        "pass": passing >= CHAPTERS and len(terms_present) == len(TERMS),
+        "chapter_lengths": list(chapters.values()),
     }
 
 

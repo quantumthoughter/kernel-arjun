@@ -1,0 +1,76 @@
+{
+  "calls": [
+    {
+      "chapter": 1,
+      "words": 1568,
+      "out_tokens": 2306,
+      "context_tokens": 133,
+      "secs": 17.3
+    },
+    {
+      "chapter": 2,
+      "words": 1927,
+      "out_tokens": 3116,
+      "context_tokens": 2153,
+      "secs": 21.3
+    },
+    {
+      "chapter": 3,
+      "words": 1674,
+      "out_tokens": 2994,
+      "context_tokens": 4716,
+      "secs": 21.2
+    },
+    {
+      "chapter": 4,
+      "words": 1476,
+      "out_tokens": 2655,
+      "context_tokens": 6935,
+      "secs": 18.7
+    },
+    {
+      "chapter": 5,
+      "words": 1751,
+      "out_tokens": 3013,
+      "context_tokens": 8827,
+      "secs": 21.6
+    },
+    {
+      "chapter": 6,
+      "words": 1787,
+      "out_tokens": 3136,
+      "context_tokens": 11107,
+      "secs": 20.7
+    },
+    {
+      "chapter": 7,
+      "words": 1274,
+      "out_tokens": 2341,
+      "context_tokens": 13396,
+      "secs": 16.4
+    },
+    {
+      "chapter": 8,
+      "words": 1313,
+      "out_tokens": 2716,
+      "context_tokens": 15094,
+      "secs": 20.8
+    },
+    {
+      "chapter": 9,
+      "words": 1796,
+      "out_tokens": 3050,
+      "context_tokens": 16820,
+      "secs": 22.5
+    },
+    {
+      "chapter": 10,
+      "words": 1615,
+      "out_tokens": 2678,
+      "context_tokens": 19143,
+      "secs": 22.3
+    }
+  ],
+  "tokens_in": 98324,
+  "tokens_out": 28005
+}
