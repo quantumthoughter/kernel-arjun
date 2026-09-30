@@ -1,0 +1,65 @@
+# Kernel-Arjun — one-command infrastructure.
+#
+#   docker compose up -d        # starts Postgres (the ledger)
+#   docker compose logs -f      # watch it
+#   docker compose down         # stop (data survives in the volume)
+#
+# Then point Kernel-Arjun at it with this DSN:
+#   host=127.0.0.1 port=5432 dbname=arjun user=arjun password=arjun
+#
+# Optional profiles:
+#   docker compose --profile ollama up -d     # + a local Ollama server
+#   docker compose --profile dashboard up -d  # + the live dashboard
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: arjun-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: arjun
+      POSTGRES_USER: arjun
+      POSTGRES_PASSWORD: arjun
+    ports:
+      - "5432:5432"
+    volumes:
+      - arjun-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arjun -d arjun"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Optional: a local model backend (profile: ollama)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: arjun-ollama
+    restart: unless-stopped
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - arjun-ollama:/root/.ollama
+    # After it starts:  docker exec -it arjun-ollama ollama pull qwen2.5-coder:7b
+
+  # Optional: the live ledger dashboard (profile: dashboard)
+  dashboard:
+    image: python:3.12-slim
+    container_name: arjun-dashboard
+    restart: unless-stopped
+    profiles: ["dashboard"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    working_dir: /app
+    command: >
+      sh -c "pip install --quiet kernel-arjun &&
+             arjun-dashboard --host 0.0.0.0 --port 8788"
+    environment:
+      ARJUN_DSN: "host=postgres port=5432 dbname=arjun user=arjun password=arjun"
+    ports:
+      - "8788:8788"
+
+volumes:
+  arjun-pgdata:
+  arjun-ollama:

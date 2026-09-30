@@ -8,16 +8,35 @@ A complete guide for a new user — from zero to a finished long-horizon goal.
 ## 0. What you need
 
 Kernel-Arjun is a *kernel*: it supplies the durable loop, the memory, the
-verification, and the budgets. It needs three things to run:
+verification, and the budgets.
+
+**The true minimum to run it:**
 
 | You need | What it is | Required? |
 |---|---|---|
 | **Python 3.10+** | the runtime | yes |
-| **A model** | the reasoner (a cloud API or a local model) | yes — pick one below |
-| **Postgres** | the durable ledger (state that survives restarts) | yes |
+| **A model** | the reasoner (a cloud API or a local model) | **yes** — pick one below |
+| **Postgres** | the durable ledger (state that survives restarts) | **yes** |
 | **A workspace** | a folder where artifacts are written | yes (any folder) |
 
-You do **not** need git, Docker, or a GPU. Postgres can be a one-line install.
+That's all. You run it from the **terminal** or **Python** — no AI host, no MCP,
+no chatbot framework required.
+
+**Optional — only if you want an AI host to drive it:**
+
+| Optional | When you need it |
+|---|---|
+| **MCP server** (`kernel-arjun[mcp]`) | to let opencode / Claude / Cursor launch goals as tools |
+| **A host AI** (opencode, Claude Desktop, Cursor, …) | to orchestrate it conversationally — must be MCP-capable |
+
+Two independent directions, easy to confuse:
+
+- **Direction A — the kernel *uses* your AI as its model:** point a `Backend` at
+  *any* OpenAI-compatible endpoint (Hive, OpenAI, Groq, vLLM, LM Studio, Ollama).
+- **Direction B — your AI *drives* the kernel:** any **MCP-capable** host calls
+  the kernel's tools. A chatbot that does not speak MCP cannot do this.
+
+You do **not** need git, Docker, a GPU, or MCP. Postgres is a one-line install.
 
 ---
 

@@ -1,0 +1,97 @@
+goal:
+  title: The Long Horizon
+  dod: A 10-chapter book in book/, each chapter >= 1500 words, first person, using
+    the canonical terms exactly.
+  tokens_limit: 600000
+  steps_limit: 120
+seeds:
+- id: '01'
+  file: book/01_chapter.md
+  title: Chapter 1
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/01_chapter.md >= 1500 words
+  query: write chapter 1 so it advances the book and keeps the canonical terms
+- id: '02'
+  file: book/02_chapter.md
+  title: Chapter 2
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/02_chapter.md >= 1500 words
+  query: write chapter 2 so it advances the book and keeps the canonical terms
+- id: '03'
+  file: book/03_chapter.md
+  title: Chapter 3
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/03_chapter.md >= 1500 words
+  query: write chapter 3 so it advances the book and keeps the canonical terms
+- id: '04'
+  file: book/04_chapter.md
+  title: Chapter 4
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/04_chapter.md >= 1500 words
+  query: write chapter 4 so it advances the book and keeps the canonical terms
+- id: '05'
+  file: book/05_chapter.md
+  title: Chapter 5
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/05_chapter.md >= 1500 words
+  query: write chapter 5 so it advances the book and keeps the canonical terms
+- id: '06'
+  file: book/06_chapter.md
+  title: Chapter 6
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/06_chapter.md >= 1500 words
+  query: write chapter 6 so it advances the book and keeps the canonical terms
+- id: '07'
+  file: book/07_chapter.md
+  title: Chapter 7
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/07_chapter.md >= 1500 words
+  query: write chapter 7 so it advances the book and keeps the canonical terms
+- id: 08
+  file: book/08_chapter.md
+  title: Chapter 8
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/08_chapter.md >= 1500 words
+  query: write chapter 8 so it advances the book and keeps the canonical terms
+- id: 09
+  file: book/09_chapter.md
+  title: Chapter 9
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/09_chapter.md >= 1500 words
+  query: write chapter 9 so it advances the book and keeps the canonical terms
+- id: '10'
+  file: book/10_chapter.md
+  title: Chapter 10
+  words: 1500
+  ground: one chapter of a book about long-horizon agents; externalized state vs context
+    windows
+  path: first person, poetic-technical, one chapter
+  fruit: book/10_chapter.md >= 1500 words
+  query: write chapter 10 so it advances the book and keeps the canonical terms
