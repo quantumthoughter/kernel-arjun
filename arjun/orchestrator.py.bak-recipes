@@ -28,7 +28,6 @@ class Orchestrator:
         self.verifier = verifier
         self.council = Council(router, cfg)
         self.writer_mode = False
-        self.recipe_mode = False
         self.canon_text = ""
         self._last_deliberation = ""
         self.console = Console()
@@ -104,7 +103,6 @@ class Orchestrator:
             except Exception:
                 meta = {}
         self.writer_mode = bool(meta.get("writer_mode"))
-        self.recipe_mode = bool(meta.get("recipe_mode"))
         canon_path = meta.get("canon")
         if canon_path:
             p = self.tools.workspace / canon_path
@@ -162,14 +160,6 @@ class Orchestrator:
             if task is None:
                 if self._finish_goal(goal):
                     return
-                if self.recipe_mode:
-                    # No open task and the recipe still isn't satisfied: don't spin.
-                    self._escalate(
-                        goal_id,
-                        "recipe incomplete and no open tasks remain (a required file or check cannot be satisfied)",
-                        "recipe stalled",
-                    )
-                    return
                 continue
             self._step(goal, task)
 
@@ -191,23 +181,6 @@ class Orchestrator:
         goal_id = goal["id"]
         counts = self.db.task_counts(goal_id)
         artifacts = self.db.list_artifacts(goal_id)
-        if self.recipe_mode:
-            # Disk + check commands are the authority. Reconcile from filesystem,
-            # then the goal is done iff every task's recipe is satisfied.
-            self._reconcile_recipe(goal_id)
-            self.console.print("[cyan]goal verification (recipe: deterministic)...[/cyan]")
-            verdict = self._recipe_goal_verify(goal_id)
-            self.db.add_step(goal_id, None, "goal_verify", {}, verdict, "ok" if verdict["pass"] else "error")
-            self.db.add_event(goal_id, None, "goal_verify", verdict)
-            if verdict["pass"]:
-                self.db.set_goal_status(goal_id, "done")
-                self._notify(f"Goal done: {goal['title']}")
-                self.console.print(f"[bold green]✅ RECIPE COMPLETE: {goal['title']}[/bold green]")
-                self.console.print(f"[green]{verdict['reason']}[/green]")
-                return True
-            self.console.print(f"[yellow]recipe not complete: {verdict.get('reason','')[:160]}[/yellow]")
-            # never re-plan a recipe (it would duplicate tasks); just keep working
-            return False
         if self.writer_mode:
             # Disk is the authority. Reconcile task statuses from the filesystem,
             # then judge the book itself — phantom tasks must not block completion.
@@ -311,8 +284,7 @@ class Orchestrator:
             )
         else:
             messages = build(
-                goal, task, tasks, steps, memories, budget, last_verdict, hint, deliberation,
-                recipe_mode=self.recipe_mode,
+                goal, task, tasks, steps, memories, budget, last_verdict, hint, deliberation
             )
         try:
             resp = self.router.complete(
@@ -411,10 +383,6 @@ class Orchestrator:
                 self._note_progress(goal_id)
             if self.writer_mode and tool == "write_file":
                 self._writer_gate(goal_id, task, str(result.get("path", "")))
-            if self.recipe_mode and tool in ("write_file", "shell"):
-                # opportunistically close a task the moment its recipe is satisfied
-                if self._recipe_gate(goal_id, task):
-                    return
         else:
             self.consecutive_errors += 1
             if self.consecutive_errors >= 4:
@@ -518,106 +486,7 @@ class Orchestrator:
         self.console.print(f"  [yellow]chapter short: {words}/{minimum} words[/yellow]")
         return False
 
-    # ---- recipe mode (deterministic code missions) ----
-
-    def _recipe_gate(self, goal_id: int, task: dict, announce: bool = False) -> bool:
-        """Deterministic completion for a code task.
-
-        A recipe task declares `required_files` (one path per line or comma
-        separated) and an optional `check` shell command. The task is done iff
-        every required file exists AND the check command exits 0. No LLM verdict.
-        """
-        if announce:
-            self.console.print(f"  [cyan]verifying task #{task['seq']} (recipe: deterministic)...[/cyan]")
-        raw = (task.get("required_files") or "").replace(",", "\n")
-        files = [f.strip() for f in raw.splitlines() if f.strip()]
-        missing = [f for f in files if not (self.tools.workspace / f).exists()]
-        if missing:
-            reason = f"missing required file(s): {', '.join(missing[:6])}"
-            self._persist(
-                goal_id, task, "verify", {"kind": "recipe", "files": files},
-                {"pass": False, "reason": reason, "missing": missing}, "error",
-            )
-            self.console.print(f"  [yellow]{reason}[/yellow]")
-            return False
-
-        check = (task.get("check_cmd") or "").strip()
-        if check:
-            result = self.tools.run("shell", {"cmd": check})
-            if not result.get("ok"):
-                tail = str(result.get("summary") or result.get("error") or "")[:200]
-                reason = f"check failed (exit {result.get('exit_code', '?')}): {tail}"
-                self._persist(
-                    goal_id, task, "verify", {"kind": "recipe", "check": check},
-                    {"pass": False, "reason": reason, "missing": []}, "error",
-                )
-                self.console.print(f"  [yellow]{reason}[/yellow]")
-                return False
-
-        reason = (
-            f"recipe satisfied: {len(files)} file(s) present"
-            + (f", check OK" if check else "")
-        )
-        self._persist(
-            goal_id, task, "verify", {"kind": "recipe", "files": files, "check": check},
-            {"pass": True, "reason": reason}, "ok",
-        )
-        self.db.bump_steps(goal_id)
-        self.db.set_task_status(task["id"], "done", f"deterministic: {reason}")
-        self.db.add_event(goal_id, None, "recipe_done", {"task": task["title"], "reason": reason})
-        self.console.print(f"  [green]✓ task accepted deterministically: {task['title']}[/green]")
-        self.consecutive_errors = 0
-        self._last_verdict.pop(task["id"], None)
-        self._note_progress(goal_id)
-        return True
-
-    def _reconcile_recipe(self, goal_id: int) -> None:
-        """Mark any pending task whose recipe is already satisfied as done.
-
-        Disk and check commands are the ground truth, so a task can be closed
-        even if the executor never explicitly said 'finish'.
-        """
-        for t in self.db.get_tasks(goal_id):
-            if t["status"] == "done":
-                continue
-            raw = (t.get("required_files") or "").replace(",", "\n")
-            files = [f.strip() for f in raw.splitlines() if f.strip()]
-            if not files:
-                continue
-            if any(not (self.tools.workspace / f).exists() for f in files):
-                continue
-            check = (t.get("check_cmd") or "").strip()
-            if check and not self.tools.run("shell", {"cmd": check}).get("ok"):
-                continue
-            self.db.set_task_status(t["id"], "done", "reconciled: recipe satisfied on disk")
-            self.db.add_event(goal_id, None, "recipe_done", {"task": t["title"], "reconciled": True})
-            self.console.print(f"  [green]✓ reconciled (recipe): {t['title']}[/green]")
-
-    def _recipe_goal_verify(self, goal_id: int) -> dict:
-        """The whole goal is done iff every recipe task is satisfied."""
-        tasks = self.db.get_tasks(goal_id)
-        pending = [t for t in tasks if t["status"] != "done"]
-        missing: list[str] = []
-        for t in tasks:
-            raw = (t.get("required_files") or "").replace(",", "\n")
-            files = [f.strip() for f in raw.splitlines() if f.strip()]
-            for f in files:
-                if not (self.tools.workspace / f).exists():
-                    missing.append(f"{f} missing (task #{t['seq']})")
-            check = (t.get("check_cmd") or "").strip()
-            if check and not self.tools.run("shell", {"cmd": check}).get("ok"):
-                missing.append(f"check failed for task #{t['seq']}: {check}")
-        if missing:
-            return {"pass": False, "reason": f"{len(missing)} recipe item(s) unmet", "missing": missing[:8]}
-        if pending:
-            return {"pass": False, "reason": f"{len(pending)} task(s) still pending", "missing": []}
-        return {"pass": True, "reason": f"all {len(tasks)} recipe task(s) satisfied on disk", "missing": []}
-
     def _do_finish(self, goal_id: int, task: dict, action: dict, resp) -> None:
-        if self.recipe_mode:
-            # deterministic judge decides; no LLM verifier for recipe tasks
-            self._recipe_gate(goal_id, task, announce=True)
-            return
         if self.writer_mode:
             # deterministic judge decides; no LLM verifier for prose chapters
             if not self._writer_gate(goal_id, task, ""):

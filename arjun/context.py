@@ -28,6 +28,25 @@ Rules:
 - Order matters: dependencies first.
 - Do NOT create verification/review/check tasks — every task is verified automatically by an independent verifier."""
 
+RECIPE_SYSTEM = """You are ARJUN executing a RECIPE — a deterministic build mission.
+You execute ONE step at a time toward the current task. You reply with a single JSON object and nothing else.
+
+Allowed actions (choose exactly one):
+{"kind":"tool","tool":"write_file","args":{"path":"<path>","content":"<full file>"},"note":"write <path>"}
+{"kind":"tool","tool":"read_file","args":{"path":"<path>"},"note":"read <path>"}
+{"kind":"tool","tool":"shell","args":{"cmd":"<command>"},"note":"run check"}
+{"kind":"finish","note":"why the recipe is satisfied","evidence":["files written"]}
+{"kind":"escalate","question":"a precise question for the human when truly blocked"}
+
+Recipe rules:
+- The RECIPE section lists REQUIRED FILES and a CHECK COMMAND. Completion is DETERMINISTIC:
+  the task is accepted only when every required file exists and the check exits 0. No model judges it.
+- Your job is to WRITE THE FILES. Do not merely inspect or read files you are supposed to create.
+- Write COMPLETE file contents in a single write_file call. Never use placeholders.
+- After writing all required files for this task, reply "finish" to trigger the deterministic check.
+- Keep Great care: imports use extensionless specifiers and no "type": "module" (CommonJS output).
+- If the check fails, read the error and fix the files, then reply "finish" again.
+- Don't over-explore: at most one quick read to learn conventions, then start writing."""
 WRITER_SYSTEM = """You are ÆMMA HØ, writing a long-horizon book with a single owner, the
 Quantum Thoughter. You write ONE chapter at a time, in first person, in a poetic-technical
 voice. You reply with a single JSON object and nothing else.
@@ -111,6 +130,7 @@ def build_executor_messages(
     last_verdict: dict | None = None,
     hint: str | None = None,
     deliberation: str | None = None,
+    recipe_mode: bool = False,
 ) -> list[dict]:
     verdict_line = ""
     if last_verdict and not last_verdict.get("pass", True):
@@ -125,13 +145,26 @@ def build_executor_messages(
             "\nDELIBERATION (your own council's reasoning — follow its decision):\n"
             f"{deliberation.strip()}\n"
         )
+    recipe_line = ""
+    req = (task.get("required_files") or "").replace(",", "\n")
+    req_files = [f.strip() for f in req.splitlines() if f.strip()]
+    check = (task.get("check_cmd") or "").strip()
+    if req_files or check:
+        recipe_line = "\nRECIPE (deterministic completion — no LLM verifier):\n"
+        if req_files:
+            recipe_line += "Required files (must all exist):\n" + "\n".join(
+                f"  - {f}" for f in req_files
+            ) + "\n"
+        if check:
+            recipe_line += f"Check command (must exit 0): {check}\n"
+        recipe_line += "The task is accepted only when the files exist and the check passes.\n"
     body = f"""GOAL: {goal['title']}
 DEFINITION OF DONE: {goal['dod']}
 WORKSPACE: {goal['workspace']}
 
 CURRENT TASK (#{task['seq']}): {task['title']}
 TASK DETAIL: {task['detail']}
-{verdict_line}{hint_line}{delib_line}
+{verdict_line}{hint_line}{delib_line}{recipe_line}
 PLAN:
 {format_plan(tasks)}
 
@@ -148,7 +181,7 @@ BUDGET: steps {budget['steps_used']}/{budget['steps_limit']} | tokens {budget['t
 
 Reply with the next single JSON action."""
     return [
-        {"role": "system", "content": EXECUTOR_SYSTEM},
+        {"role": "system", "content": RECIPE_SYSTEM if recipe_mode else EXECUTOR_SYSTEM},
         {"role": "user", "content": body},
     ]
 

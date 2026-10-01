@@ -74,8 +74,3 @@ CREATE TABLE IF NOT EXISTS budgets (
   wallclock_limit_sec INT NOT NULL DEFAULT 86400,
   started_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
--- Recipe mode (deterministic code missions): a task may declare files that must
--- exist and a shell check that must exit 0. Backward-compatible additions.
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS required_files TEXT NOT NULL DEFAULT '';
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS check_cmd TEXT NOT NULL DEFAULT '';

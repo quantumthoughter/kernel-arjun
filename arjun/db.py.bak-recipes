@@ -59,20 +59,9 @@ class DB:
     def add_tasks(self, goal_id: int, tasks: list[dict], start_seq: int = 0) -> None:
         with self.conn.cursor() as cur:
             for i, t in enumerate(tasks, start=start_seq + 1):
-                files = t.get("required_files", "")
-                if isinstance(files, (list, tuple)):
-                    files = "\n".join(str(f) for f in files)
                 cur.execute(
-                    "INSERT INTO tasks (goal_id, seq, title, detail, required_files, check_cmd) "
-                    "VALUES (%s, %s, %s, %s, %s, %s)",
-                    (
-                        goal_id,
-                        i,
-                        str(t.get("title", "task")),
-                        str(t.get("detail", "")),
-                        str(files),
-                        str(t.get("check", "")),
-                    ),
+                    "INSERT INTO tasks (goal_id, seq, title, detail) VALUES (%s, %s, %s, %s)",
+                    (goal_id, i, str(t.get("title", "task")), str(t.get("detail", ""))),
                 )
 
     def get_tasks(self, goal_id: int) -> list[dict]:

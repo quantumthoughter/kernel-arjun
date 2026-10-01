@@ -109,56 +109,9 @@ def cmd_start(args) -> int:
     if args.canon:
         meta["writer_mode"] = True
         meta["canon"] = args.canon
-    if args.tasks:
-        meta["recipe_mode"] = True
     goal_id = db.create_goal(args.title, args.dod or "", workspace, meta)
     db.ensure_budget(goal_id, cfg.max_steps, cfg.max_tokens, cfg.max_minutes * 60)
-    if args.tasks:
-        spec = yaml.safe_load(Path(args.tasks).expanduser().resolve().read_text())
-        tasks = spec.get("tasks", spec) if isinstance(spec, dict) else spec
-        tasks = [t for t in tasks if isinstance(t, dict) and t.get("title")]
-        db.add_tasks(goal_id, tasks)
-        db.add_event(goal_id, None, "plan", {"source": args.tasks, "tasks": len(tasks)})
-        console.print(f"[green]recipe loaded:[/green] {len(tasks)} deterministic task(s)")
     console.print(f"[green]goal {goal_id} created[/green] — workspace: {workspace}")
-    orch = build_orchestrator(cfg, db, router, memory, workspace)
-    status = orch.run(goal_id)
-    console.print(f"final status: [bold]{status}[/bold]")
-    return 0
-
-
-def cmd_recipe(args) -> int:
-    """Run a deterministic recipe mission: a YAML file defines goal + tasks.
-
-    Each task declares `title`, optional `detail`, `required_files` (must exist)
-    and `check` (a shell command that must exit 0). No LLM verifier is used.
-    """
-    cfg = load_config(args.config)
-    if args.max_steps:
-        cfg.max_steps = args.max_steps
-    spec = yaml.safe_load(Path(args.recipe).expanduser().resolve().read_text())
-    goal_spec = spec.get("goal", {})
-    tasks = [t for t in spec.get("tasks", []) if isinstance(t, dict) and t.get("title")]
-    if not tasks:
-        console.print("[red]recipe has no tasks[/red]")
-        return 1
-    cfg.dsn = goal_spec.get("dsn", cfg.dsn)
-    # Recipe mode is deterministic: the task already specifies exactly what to
-    # build, so skip council deliberation (it causes analysis-paralysis).
-    cfg.reasoning_depth = args.depth if args.depth is not None else 0
-    db, client, router, memory = setup(cfg, dry_run=args.dry_run)
-    workspace = str(Path(args.workspace or goal_spec.get("workspace", ".")).expanduser().resolve())
-    meta = {"recipe_mode": True}
-    goal_id = db.create_goal(goal_spec.get("title", "recipe"), goal_spec.get("dod", ""), workspace, meta)
-    db.ensure_budget(
-        goal_id,
-        goal_spec.get("steps_limit", cfg.max_steps),
-        goal_spec.get("tokens_limit", cfg.max_tokens),
-        cfg.max_minutes * 60,
-    )
-    db.add_tasks(goal_id, tasks)
-    db.add_event(goal_id, None, "plan", {"source": args.recipe, "tasks": len(tasks)})
-    console.print(f"[green]recipe goal {goal_id} created[/green] — {len(tasks)} task(s), workspace {workspace}")
     orch = build_orchestrator(cfg, db, router, memory, workspace)
     status = orch.run(goal_id)
     console.print(f"final status: [bold]{status}[/bold]")
@@ -661,17 +614,8 @@ def main(argv=None) -> int:
     p.add_argument("--workspace", default=".", help="workspace directory")
     p.add_argument("--max-steps", type=int, default=0)
     p.add_argument("--canon", help="canon file relative to workspace; enables writer mode")
-    p.add_argument("--tasks", help="recipe YAML with pre-written deterministic tasks")
     p.add_argument("--dry-run", action="store_true", help="use scripted model (no ollama)")
     p.set_defaults(fn=cmd_start)
-
-    p = sub.add_parser("recipe", help="run a deterministic recipe mission (recipe.yml)")
-    p.add_argument("recipe", help="path to recipe.yml")
-    p.add_argument("--workspace", default=None)
-    p.add_argument("--max-steps", type=int, default=0)
-    p.add_argument("--depth", type=int, default=None, help="council passes (default 0 for recipes)")
-    p.add_argument("--dry-run", action="store_true", help="use scripted model (no ollama)")
-    p.set_defaults(fn=cmd_recipe)
 
     p = sub.add_parser("book", help="run a seed-driven book mission (seeds.yml)")
     p.add_argument("seeds", help="path to seeds.yml")
