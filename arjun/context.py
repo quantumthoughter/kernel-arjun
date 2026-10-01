@@ -41,12 +41,12 @@ Allowed actions (choose exactly one):
 Recipe rules:
 - The RECIPE section lists REQUIRED FILES and a CHECK COMMAND. Completion is DETERMINISTIC:
   the task is accepted only when every required file exists and the check exits 0. No model judges it.
-- Your job is to WRITE THE FILES. Do not merely inspect or read files you are supposed to create.
+- YOUR VERY FIRST ACTION must be a write_file that creates one of the required files.
+  Do NOT read files you have not written. Do NOT explore. Do NOT list directories.
 - Write COMPLETE file contents in a single write_file call. Never use placeholders.
 - After writing all required files for this task, reply "finish" to trigger the deterministic check.
-- Keep Great care: imports use extensionless specifiers and no "type": "module" (CommonJS output).
-- If the check fails, read the error and fix the files, then reply "finish" again.
-- Don't over-explore: at most one quick read to learn conventions, then start writing."""
+- TypeScript conventions: no "type": "module" (CommonJS output), extensionless imports.
+- If the check fails, read the error, fix the files, then reply "finish" again."""
 WRITER_SYSTEM = """You are ÆMMA HØ, writing a long-horizon book with a single owner, the
 Quantum Thoughter. You write ONE chapter at a time, in first person, in a poetic-technical
 voice. You reply with a single JSON object and nothing else.

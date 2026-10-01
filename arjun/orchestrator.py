@@ -257,28 +257,37 @@ class Orchestrator:
         budget = self.db.get_budget(goal_id)
         memories = self.memory.recall(f"{task['title']}. {task['detail']}", k=self.cfg.memory_top_k)
         last_verdict = self._last_verdict.get(task["id"])
+        hint = None
         spin, ok_steps = self._detect_spin(steps, task)
         if spin:
-            self.console.print("  [magenta]spin detected — auto-finishing task for verification[/magenta]")
-            self._do_finish(
-                goal_id,
-                task,
-                {
-                    "kind": "finish",
-                    "note": "auto-finish: repeated identical-target steps",
-                    "evidence": [f"{ok_steps} successful steps on this task"],
-                },
-                ModelResponse(content="", model="auto"),
-            )
-            return
-        hint = None
-        if ok_steps >= 3:
+            if self.recipe_mode:
+                # A spin in recipe mode means repeated reads instead of writes.
+                # Don't auto-finish (no files yet); force a write-focused nudge.
+                self.console.print("  [magenta]spin detected — nudging executor to write required files[/magenta]")
+                hint = (
+                    "You are SPINNING on reads. STOP reading. Your next action MUST be a "
+                    "write_file that creates one of the RECIPE's required files with complete content."
+                )
+            else:
+                self.console.print("  [magenta]spin detected — auto-finishing task for verification[/magenta]")
+                self._do_finish(
+                    goal_id,
+                    task,
+                    {
+                        "kind": "finish",
+                        "note": "auto-finish: repeated identical-target steps",
+                        "evidence": [f"{ok_steps} successful steps on this task"],
+                    },
+                    ModelResponse(content="", model="auto"),
+                )
+                return
+        if ok_steps >= 3 and hint is None:
             hint = (
                 "You already have successful steps on this task. If it is verifiably complete, "
                 "reply finish now instead of repeating work."
             )
         deliberation = None
-        if self.cfg.reasoning_depth > 0:
+        if self.cfg.reasoning_depth > 0 and not self.recipe_mode:
             brief = (
                 f"GOAL: {goal['title']}\nDEFINITION OF DONE: {goal['dod']}\n"
                 f"CURRENT TASK (#{task['seq']}): {task['title']}\nTASK DETAIL: {task['detail']}\n\n"
