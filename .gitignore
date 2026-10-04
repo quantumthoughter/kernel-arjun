@@ -7,6 +7,11 @@ dist/
 .venv/
 .pytest_cache/
 
+# Local backups (never commit)
+*.bak
+*.bak-*
+*.orig
+
 # Secrets — never commit
 .env
 *.key
